@@ -1,0 +1,131 @@
+/**
+*@time:2019年10月27日
+*@author:hippo
+*@version:0.9
+*操作说明：前进↑后退↓左转←右转→舵机⚪取消×
+**/
+
+#include <Adafruit_MotorShield.h>
+#include <PS2X_lib.h>
+#include <Adafruit_MS_PWMServoDriver.h>
+#include <Wire.h>
+#include <Ultrasonic.h>
+//驱动板+PS2手柄库
+
+Adafruit_MotorShield AFMS = Adafruit_MotorShield();//定义驱动板
+PS2X ps2x;//定义PS2手柄
+
+int shootingMotor1 = 5;
+int shootingMotor2 = 6;
+//定义发射器电机端口
+
+Adafruit_DCMotor *shiftMotor1 = AFMS.getMotor(1);
+Adafruit_DCMotor *shiftMotor2 = AFMS.getMotor(2);
+Adafruit_DCMotor *shiftMotor3 = AFMS.getMotor(3);
+Adafruit_DCMotor *shiftMotor4 = AFMS.getMotor(4);
+//定义驱动电机端口
+
+Adafruit_Servo *servo1 = AFMS.getServo(1);
+Adafruit_Servo *servo2 = AFMS.getServo(2);
+//定义舵机端口
+
+int shootingSpeed = 100; //0~250
+int runningSpeed = 100;//0~250
+int servoSpeed = 5;
+//定义电机+舵机速度
+
+void setup(){
+    AFMS.begin();
+    //初始化驱动板
+
+    shiftMotor1->setSpeed(runningSpeed);
+    shiftMotor2->setSpeed(runningSpeed);
+    shiftMotor3->setSpeed(runningSpeed);
+    shiftMotor4->setSpeed(runningSpeed);
+    //设置电机速度
+
+    pinMode(shootingMotor1, OUTPUT);
+    pinMode(shootingMotor2, OUTPUT);
+    //定义发射器电机端口为输出端口
+
+    int error = 0;
+    do{
+        error = ps2x.config_gamepad(13, 11, 10, 12, true, true);
+	if(error == 0){
+	    break;
+	}
+	else{
+	    delay(100);
+	}
+    }while(1);
+    //匹配PS2手柄
+
+    servo1->writeServo(0);
+    servo2->writeServo(0);
+    //初始化舵机角度
+
+    analogWrite(shootingMotor1,shootingSpeed);
+    analogWrite(shootingMotor2,shootingSpeed);
+    //发射器开始不间断运行
+
+}
+
+void loop(){
+    ps2x.read_gamepad(false, 0);
+    delay(30);
+    //读取手柄状态信息
+
+    if(ps2x.Button(PSB_PAD_UP)){
+        shiftMotor1->run(FORWARD);
+	shiftMotor2->run(FORWARD);
+	shiftMotor3->run(FORWARD);
+	shiftMotor4->run(FORWARD);
+    }
+    //前进↑
+
+    if(ps2x.Button(PSB_PAD_DOWN)){
+        shiftMotor1->run(BACKWARD);
+	shiftMotor2->run(BACKWARD);
+	shiftMotor3->run(BACKWARD);
+	shiftMotor4->run(BACKWARD);
+    }
+    //后退↓
+
+    if(ps2x.Button(PSB_PAD_RIGHT)){
+        shiftMotor1->run(BACKWARD);
+	shiftMotor2->run(BACKWARD);
+	shiftMotor3->run(BACKWARD);
+	shiftMotor4->run(BACKWARD);
+    }
+    //右转→
+
+    if(ps2x.Button(PSB_PAD_LEFT)){
+        shiftMotor1->run(BACKWARD);
+	shiftMotor2->run(BACKWARD);
+	shiftMotor3->run(BACKWARD);
+	shiftMotor4->run(BACKWARD);
+    }
+    //左转←
+
+    if(ps2x.ButtonReleased(PSB_CIRCLE)){        // ⚪
+        int degress1 = servo1->readDegrees();
+        int degress2 = servo2->readDegrees();
+        //读取舵机角度信息
+	do{
+	    degress1+=servoSpeed;
+	    degress2+=servoSpeed;
+	    servo1->writeServo(degress1);
+	    servo2->writeServo(degress2);
+	    delay(100);
+	    //舵机旋转
+
+	    if(ps2x.ButtonPressed(PSB_CROSS)){         // ╳
+		break;
+	    }
+                    //退出旋转
+	}while(1);
+
+    delay(10);
+    }
+    
+}

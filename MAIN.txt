@@ -1,0 +1,104 @@
+#include <Adafruit_MotorShield.h>
+#include <PS2X_lib.h>
+#include <Adafruit_MS_PWMServoDriver.h>
+#include <Wire.h>
+#include <Ultrasonic.h>
+
+Adafruit_MotorShield AFMS = Adafruit_MotorShield();
+PS2X ps2x;
+
+int shootingMotor1 = 5;
+int shootingMotor2 = 6;
+
+Adafruit_DCMotor *shiftMotor1 = AFMS.getMotor(1);
+Adafruit_DCMotor *shiftMotor2 = AFMS.getMotor(2);
+Adafruit_DCMotor *shiftMotor3 = AFMS.getMotor(3);
+Adafruit_DCMotor *shiftMotor4 = AFMS.getMotor(4);
+
+Adafruit_Servo *servo1 = AFMS.getServo(1);
+Adafruit_Servo *servo2 = AFMS.getServo(2);
+
+int shootingSpeed = 100; //0~250
+int runningSpeed = 100;//0~250
+int servoSpeed = 5;
+
+void setup(){
+    AFMS.begin();
+
+    shiftMotor1->setSpeed(runningSpeed);
+    shiftMotor2->setSpeed(runningSpeed);
+    shiftMotor3->setSpeed(runningSpeed);
+    shiftMotor4->setSpeed(runningSpeed);
+
+    pinMode(shootingMotor1, OUTPUT);
+    pinMode(shootingMotor2, OUTPUT);
+
+    int error = 0;
+    do{
+        error = ps2x.config_gamepad(13, 11, 10, 12, true, true);
+	if(error == 0){
+	    break;
+	}
+	else{
+	    delay(100);
+	}
+    }while(1);
+
+    servo1->writeServo(0);
+    servo2->writeServo(0);
+
+    analogWrite(shootingMotor1,shootingSpeed);
+    analogWrite(shootingMotor2,shootingSpeed);
+
+}
+
+void loop(){
+    ps2x.read_gamepad(false, 0);
+    delay(30);
+
+    if(ps2x.Button(PSB_PAD_UP)){
+        shiftMotor1->run(FORWARD);
+	shiftMotor2->run(FORWARD);
+	shiftMotor3->run(FORWARD);
+	shiftMotor4->run(FORWARD);
+    }
+
+    if(ps2x.Button(PSB_PAD_DOWN)){
+        shiftMotor1->run(BACKWARD);
+	shiftMotor2->run(BACKWARD);
+	shiftMotor3->run(BACKWARD);
+	shiftMotor4->run(BACKWARD);
+    }
+
+    if(ps2x.Button(PSB_PAD_RIGHT)){
+        shiftMotor1->run(BACKWARD);
+	shiftMotor2->run(BACKWARD);
+	shiftMotor3->run(BACKWARD);
+	shiftMotor4->run(BACKWARD);
+    }
+
+    if(ps2x.Button(PSB_PAD_LEFT)){
+        shiftMotor1->run(BACKWARD);
+	shiftMotor2->run(BACKWARD);
+	shiftMotor3->run(BACKWARD);
+	shiftMotor4->run(BACKWARD);
+    }
+
+    if(ps2x.ButtonReleased(PSB_CIRCLE)){
+        int degress1 = servo1->readDegrees();
+	int degress2 = servo2->readDegrees();
+	do{
+	    degress1+=servoSpeed;
+	    degress2+=servoSpeed;
+	    servo1->writeServo(degress1);
+	    servo2->writeServo(degress2);
+	    delay(100);
+	    
+	    if(ps2x.ButtonPressed(PSB_CROSS)){
+		break;
+	    }
+	}while(1);
+
+    delay(10);
+    }
+}
